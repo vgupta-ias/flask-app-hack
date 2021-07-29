@@ -9,13 +9,11 @@ ADD ./config.py /
 ADD ./construct_data.sh /
 ADD ./functions.py /
 ADD ./predict_url.py /
-ADD ./nltk_setup.py /
 ADD ./server.py /
 ADD ./inputSegments3.csv /
 ADD ./FinalData.csv /
 
 ADD ./stopwords_extended.txt /
-ADD ./word_frequency_2021-07-28.picle /
 ADD ./word_frequency_2021-07-29.picle /
 
 RUN python3 -m nltk.downloader punkt

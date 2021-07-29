@@ -4,9 +4,5 @@ pandas
 numpy
 sklearn
 beautifulsoup4
-chardet
-langdetect
 nltk
 requests
-urllib3
-Counter
