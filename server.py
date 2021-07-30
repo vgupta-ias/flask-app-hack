@@ -66,6 +66,12 @@ def combine_features(row):
     except:
         print("Error:", row)
 
+def delete_last_row():
+    f = open('FinalData.csv', "r+")
+    lines = f.readlines()
+    lines.pop()
+    f = open('FinalData.csv', "w+")
+    f.writelines(lines)
 
 # Recommender process , to find segments
 def process_recommend(keywords):
@@ -112,6 +118,8 @@ def process_recommend(keywords):
         if i > 10:
             break
 
+    delete_last_row()
+    
     return result
 
 
