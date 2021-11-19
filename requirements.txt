@@ -1,0 +1,11 @@
+beautifulsoup4
+chardet
+langdetect
+nltk
+numpy
+pandas
+requests
+urllib3
+sklearn
+Counter
+feedparser

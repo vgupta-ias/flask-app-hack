@@ -1,127 +1,165 @@
 import pickle
-import time
+
+from nltk.util import pr
 import config
 import argparse
-import pandas as pd
-from csv import writer
+import json
+import random
+import requests
+import feedparser
+import time
+import ssl
 from functions import scrape_url
-from sklearn.feature_extraction.text import CountVectorizer
-from sklearn.metrics.pairwise import cosine_similarity
+from flask import Flask, jsonify, request, Response
 
+app = Flask(__name__)
 
-# add a new row into csv file for getting recommended segments
-def add_row(val1, val2):
-    values1 = val1.split("_")
-    values2 = val2.split("_")
-    keywords = values1[0] + " " + values1[2] + " " + values2[0] + " " + values2[2]
-    # List
-    list1 = [137, 1234567, keywords, keywords, False]
-
-    # Open our existing CSV file in append mode
-    # Create a file object for this file
-    with open('inputSegments3.csv', 'a') as f_object:
-        # Pass this file object to csv.writer()
-        # and get a writer object
-        writer_object = writer(f_object)
-
-        # Pass the list as an argument into
-        # the writerow()
-        writer_object.writerow(list1)
-
-        # Close the file object
-        f_object.close()
-    process_recommend(keywords)
-
-
-# helper functions for recommender. Use them when needed #######
-def get_title_from_index(index, df):
-    return df[df.index == index]["Name"].values[0]
-
-
-def get_index_from_title(title, df):
-    return df[df.Name == title]["index"].values[0]
-
-
-def combine_features(row):
-    try:
-        return row['Name'] + " " + row['Description'] + " " + row["SegmentType"]
-    except:
-        print("Error:", row)
-
-
-# Recommender process , to find segments
-def process_recommend(keywords):
-    time.sleep(5)
-    # Step 1: Read CSV File
-    df = pd.read_csv("inputSegments3.csv")
-    # print(df.columns)
-
-    # Step 2: Select Features
-    features = ['Name', 'Description', 'SegmentType']
-
-    # Step 3: Create a column in DF which combines all selected features
-    for feature in features:
-        df[feature] = df[feature].fillna('')
-
-    df["combined_features"] = df.apply(combine_features, axis=1)
-    # print "Combined Features:", df["combined_features"].head()
-
-    # Step 4: Create count matrix from this new combined column
-    cv = CountVectorizer()
-
-    count_matrix = cv.fit_transform(df["combined_features"])
-
-    # Step 5: Compute the Cosine Similarity based on the count_matrix
-    cosine_sim = cosine_similarity(count_matrix)
-    input_seg_name = keywords
-    print("Input Segment/Keywords : " + input_seg_name)
-
-    # Step 6: Get index of this segment from its title
-    segment_index = get_index_from_title(input_seg_name, df)
-
-    similar_segments = list(enumerate(cosine_sim[segment_index]))
-
-    # Step 7: Get a list of similar segments in descending order of similarity score
-    sorted_similar_segments = sorted(similar_segments, key=lambda x: x[1], reverse=True)
-
-    # Step 8: Print titles of first 5 segments
-    print("Recommended Segments : ")
-    i = 0
-    for segment in sorted_similar_segments:
-        seg_name = get_title_from_index(segment[0], df)
-        print(seg_name)
-        i = i + 1
-        if i > 10:
-            break
-
-
-# URL predict logic goes here
 pickle_in = open(config.WORDS_FREQUENCY_PATH, "rb")
 words_frequency = pickle.load(pickle_in)
 
 parser = argparse.ArgumentParser(description='URLs for category predictions')
 parser.add_argument('-u', '--url', help='Predict custom website')
 parser.add_argument('-t', '--text_file_path', help='Predict websites written in text file')
+ssl._create_default_https_context = ssl._create_unverified_context
 
-args = parser.parse_args()
-
-if args.url:
-    url = args.url
+# args = parser.parse_args()
+url = 'https://www.hindustantimes.com/business/cocacola-responds-after-cristiano-ronaldo-gesture-cost-it-4-billion-101623830150314.html'
+results = []
+if url:
     print(url)
     results = scrape_url(url, words_frequency)
     if results:
-        print('Predicted main category:', results[0])
-        print('Predicted sub-main category:', results[2])
-        add_row(results[0], results[2])
-elif args.text_file_path:
-    file_path = args.text_file_path
-    with open(file_path) as f:
-        for url in f:
-            url = url.replace('\n', '')
-            print(url)
-            results = scrape_url(url.replace('\n', ''), words_frequency)
-            if results:
-                print('Predicted main category:', results[0])
-                print('Predicted sub-main category:', results[2])
+        print('category-1:', results[0])
+        print('category-2:', results[2])
+        # print('category-3:', results[4])
 else:
     parser.error("Please specify websites input type. More about input types you can find 'python predict_url -h'")
+
+def getnews(title):
+    url = "https://newsapi.org/v2/everything"
+    params= {'qinTitle':title,'from':"2021-11-17",'apiKey':"1d1ec61cec55420dbc71cb79d9be7fb0","language":"en"}
+    r=requests.get(url,params)
+    data=r.json()
+    print(data)
+    urls=[]
+    for url in data['articles']:
+        urls.append(url['url'])
+    return urls
+
+def trend_data(name):
+    
+    url="https://trends.google.com/trends/trendingsearches/daily/rss?geo="+name.upper()
+    print(url)
+    NewsFeed = feedparser.parse(url)
+    print('NewsFeed ', NewsFeed)
+    output=[]
+    for entry in NewsFeed["entries"][:10]:
+        topic={
+            'title':entry["title"],
+            'summary':entry["summary"],
+            'traffic':entry["ht_approx_traffic"],
+            'news_url':getnews(entry["title"])
+        }
+        output.append(topic)
+    print(output)
+    return output
+
+
+@app.route('/health', methods=['GET'])
+def health():
+    out = {}
+    out['status'] = "OK"
+    return jsonify(out)
+
+@app.route('/trending/<string:name>', methods=['GET'])
+def translate_string(name):
+    print('1')
+    trend_urls = trend_data(name)
+    print(trend_urls)
+    # time.sleep(10)
+    top_url = trend_urls[0]['news_url'][0]
+    print(request.get_data())
+    
+    
+    dictToSend = {'key':720,
+                  'source':top_url,
+                  'type':'URL',
+                  'sync':'yes'
+                  }
+    res = requests.post('http://iaseditor.admantx.com/editor/service/descriptor', data=dictToSend)
+    print(res.json())
+    
+    
+    lemmas_str = []
+    lemmas = res.json()['lemmas']
+    print ('lemmas : ',lemmas)
+    lem = {}
+    for lem in lemmas:
+        print(lem)
+        lemmas_str.append(lem['name'])
+    print(lemmas_str)
+    
+    
+    places_str = []
+    places = res.json()['places']
+    print ('places : ',places)
+    place = {}
+    for place in places:
+        print(place)
+        places_str.append(place['name'])
+    print('places_str : ',places_str)
+    
+    people_str = []
+    people = res.json()['people']
+    print ('people : ',people)
+    person = {}
+    for person in people:
+        print(person)
+        people_str.append(person['name'])
+    print('people_str : ',people_str)
+
+    companies_str = []
+    companies = res.json()['companies']
+    print ('comapanies : ',companies)
+    company = {}
+    for company in companies:
+        print(company)
+        companies_str.append(company['name'])
+    print('companies_str : ',companies_str)
+
+    feelings_str = []
+    feelings = res.json()['feelings']
+    print ('feelings : ',feelings)
+    feeling = {}
+    for feeling in feelings:
+        print(feeling)
+        feelings_str.append(feeling['name'])
+    print('feelings_str :',feelings_str)
+
+    categories_str = []
+    categories = res.json()['categories']
+    print ('categories : ',categories)
+    feeling = {}
+    for feeling in categories:
+        print(feeling)
+        categories_str.append(feeling['name'])
+    print('categories_str : ',categories_str)
+
+
+    segment = {
+                'SegmentType': 'Top Trending Today',
+                'Name': results[0],
+                'Description': {
+                    'lemmas':lemmas_str,
+                    'places':places_str,
+                    'people':people_str,
+                    'companies':companies_str,
+                    'feelings':feelings_str,
+                    'categories':categories_str
+                    },
+                'code': random.randrange(1000, 10000, 13)
+            }
+    return jsonify([segment])
+
+
+app.run('0.0.0.0', 7050)

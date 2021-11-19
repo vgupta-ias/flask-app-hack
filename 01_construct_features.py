@@ -6,7 +6,7 @@ import nltk
 import pickle
 from functions import timeit, scrape, parse_request
 
-df = pd.read_csv("URL-categorization-DFE.csv")
+df = pd.read_csv(config.MAIN_DATASET_PATH)
 df = df.rename(columns={'main_category:confidence': 'main_category_confidence'})
 df = df[['url', 'main_category', 'main_category_confidence']]
 

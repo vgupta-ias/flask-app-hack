@@ -13,9 +13,9 @@ REQUEST_HEADERS = {
     'Connection': 'keep-alive'}
 
 # Paths for datasets and models
-MAIN_DATASET_PATH = f'url_categorization_dfe.csv'
-TOKENS_PATH = f'Feature_dataset_{date}.csv'
-WORDS_FREQUENCY_PATH = f"word_frequency_{date}.picle"
+MAIN_DATASET_PATH = f'Datasets/url_categorization_dfe.csv'
+TOKENS_PATH = f'Datasets/Feature_dataset_{date}.csv'
+WORDS_FREQUENCY_PATH = f"Frequency_models/word_frequency_{date}.picle"
 
 
 TOP_LEVEL_DOMAIN_WHITELIST = {'com', 'net', 'to', 'info', 'org', 'cn', 'jp', 'tw', 'ir', 'uk', 'ae', 'tv', 'in', 'hk',
@@ -26,7 +26,7 @@ TOP_LEVEL_DOMAIN_WHITELIST = {'com', 'net', 'to', 'info', 'org', 'cn', 'jp', 'tw
                               }
 
 STOPWORDS = set(stopwords.words('english'))
-with open("stopwords_extended.txt") as f:
+with open("Datasets/stopwords_extended.txt") as f:
     for word in f:
         STOPWORDS.add(word.replace('\n', ''))
 

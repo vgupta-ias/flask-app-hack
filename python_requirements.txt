@@ -1,8 +1,0 @@
-flask
-flask_cors
-pandas
-numpy
-sklearn
-beautifulsoup4
-nltk
-requests

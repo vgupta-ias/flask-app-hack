@@ -44,10 +44,16 @@ def predict_category(words_frequency, tokens):
     category_index = category_weights.index(max(category_weights))
     main_category = list(words_frequency.keys())[category_index]
     category_weight = max(category_weights)
+    
     category_weights[category_index] = 0
     category_index = category_weights.index(max(category_weights))
     main_category_2 = list(words_frequency.keys())[category_index]
     category_weight_2 = max(category_weights)
+    
+    # category_weights[category_index] = 0
+    # category_index = category_weights.index(max(category_weights))
+    # main_category_3 = list(words_frequency.keys())[category_index]
+    # category_weight_3 = max(category_weights)
     return main_category, category_weight, main_category_2, category_weight_2
 
 
